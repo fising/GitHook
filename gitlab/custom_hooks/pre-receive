@@ -1,0 +1,83 @@
+#!/bin/bash
+
+# Constants
+declare -r RET_OK=1
+declare -r RET_ERR=2
+
+declare -r RET_YES=1
+declare -r RET_NO=2
+
+isExistConflictString () {
+	if [[ "$1" =~ [\>\<]{7} ]] ; then
+		return $RET_YES;
+	else
+		return $RET_NO;
+	fi
+}
+
+checkExistConflict () {
+	oldVer=$1
+	newVer=$2
+	#echo "oldVer:"$oldVer
+	#echo "newVer:"$newVer
+
+	isConflict=$RET_NO
+
+	# Per File
+	allFile=$(git diff --name-only --diff-filter=AM $oldVer $newVer)
+
+	for file in $allFile
+	do
+			#echo "File:"$file
+
+			# Per Line
+			allLine=$(git diff $oldVer $newVer -- $file | grep '^[+]' | grep -Ev '^(--- a/|\+\+\+ b/)')
+			while read line; do
+
+				isExistConflictString $line
+				if [ $? -eq $RET_YES ]; then
+					#errorFile=$file
+					echo "[Conflict]["$file"]"$line
+					isConflict=$RET_YES
+					break
+				fi
+
+			done <<< "$allLine"
+
+			if [ $isConflict -eq $RET_YES ]; then
+				break
+			fi
+
+	done
+
+	if [ $isConflict -eq $RET_YES ]; then
+			return $RET_ERR
+	else
+			return $RET_OK
+	fi
+}
+
+
+isCommitConflict=$RET_NO
+#errorFile="NONE"
+
+while read oldrev newrev refname; do
+	# Per Commit
+	#echo "Commit: ["$refname"]"$oldrev"-->"$newrev
+
+	checkExistConflict $oldrev $newrev
+	if [ $? -eq $RET_ERR ]; then
+		isCommitConflict=$RET_YES
+		break;
+	fi
+
+done
+
+if [ $isCommitConflict -eq $RET_NO ]; then
+	#echo "[FINAL]OK"
+	exit 0
+else
+	echo "Detect conflict file(s), fix it before push to repo"
+	exit 1
+fi
+
