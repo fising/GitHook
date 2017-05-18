@@ -1,0 +1,39 @@
+#!/bin/bash
+
+
+while [ $# -gt 0 ]
+do
+	case "$1" in
+		(--change)     CHANGEID="$2";  shift ;;
+		(--is-draft)   IS_DRAFT="$2";  shift ;;
+		(--change-url) CHANGEURL="$2"; shift ;;
+		(--project)    PROJECT="$2";   shift ;;
+		(--branch)     BRANCH="$2";    shift ;;
+		(--topic)      TOPIC="$2";     shift ;;
+		(--author)     AUTHOR="$2";    shift ;;
+		(--commit)     COMMIT="$2";    shift ;;
+		(--comment)    COMMENT="$2";   shift ;;
+		(--change-owner) OWNER="$2";   shift ;;
+		(--Code-Review) SCORE="$2";    shift ;;
+		(--Verified)   VERIFIED="$2";  shift ;;
+	esac
+	shift
+done
+
+echo $PROJECT
+
+if [[ "$PROJECT" == "SZRDCommon" ]] ; then
+	echo "Hexo!!"
+	cd /media/hdd/hexo/git/SZRDCommon
+	pwd
+	git --git-dir=/media/hdd/hexo/git/SZRDCommon/.git --work-tree=/media/hdd/hexo/git/SZRDCommon pull origin master
+	pwd
+#	cnpm install --save
+	hexo clean
+	hexo generate
+	rm -rf /media/hdd/hexo/nginx/SZRDCommon/*
+	cp -r public/* /media/hdd/hexo/nginx/SZRDCommon
+else
+	echo "Not Hexo"
+fi
+
