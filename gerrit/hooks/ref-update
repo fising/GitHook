@@ -7,7 +7,7 @@ while [ $# -gt 0 ]
 do
 	case "$1" in
 		(--project)     PROJECT_NAME="$2";  shift ;;
-		(--is-refname)   REF_NAME="$2";  shift ;;
+		(--refname)   REF_NAME="$2";  shift ;;
 		(--uploader) UPLOADER="$2"; shift ;;
 		(--oldrev)    OLD_REV="$2";   shift ;;
 		(--newrev)     NEW_REV="$2";    shift ;;
@@ -88,7 +88,8 @@ checkExistConflict () {
 	fi
 }
 
-if [[ "$PROJECT" == "SZRDCommon" ]] ; then
+if [[ "$PROJECT" == "android\/simple1" ]] ; then
+  echo "hit"
   checkExistConflict $OLD_REV $NEW_REV
   if [ $? -eq $RET_OK ]; then
     echo "[FINAL]OK"
