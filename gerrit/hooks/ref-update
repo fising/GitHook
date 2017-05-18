@@ -1,0 +1,102 @@
+#!/bin/bash
+
+# ref-update --project <project name> --refname <refname> --uploader <uploader> --oldrev <sha1> --newrev <sha1>
+
+
+while [ $# -gt 0 ]
+do
+	case "$1" in
+		(--project)     PROJECT_NAME="$2";  shift ;;
+		(--is-refname)   REF_NAME="$2";  shift ;;
+		(--uploader) UPLOADER="$2"; shift ;;
+		(--oldrev)    OLD_REV="$2";   shift ;;
+		(--newrev)     NEW_REV="$2";    shift ;;
+	esac
+	shift
+done
+
+# PROJECT_NAME="$2"
+# REF_NAME="$4"
+# UPLOADER="$6"
+# OLD_REV="$8"
+# NEW_REV="$10"
+
+# LOG="/tmp/log.txt"
+# date >> $LOG
+# echo "args: $@" >> $LOG
+
+echo "project name $PROJECT_NAME"
+echo "ref name $REF_NAME"
+echo "UPLOADER $UPLOADER"
+echo "old rev $OLD_REV"
+echo "new rev $NEW_REV"
+
+# Constants
+declare -r RET_OK=1
+declare -r RET_ERR=2
+
+declare -r RET_YES=1
+declare -r RET_NO=2
+
+isExistConflictString () {
+	if [[ "$1" =~ [\>\<]{7} ]] ; then
+		return $RET_YES;
+	else
+		return $RET_NO;
+	fi
+}
+
+checkExistConflict () {
+	oldVer=$1
+	newVer=$2
+	#echo "oldVer:"$oldVer
+	#echo "newVer:"$newVer
+
+	isConflict=$RET_NO
+
+	# Per File
+	allFile=$(git diff --name-only --diff-filter=AM $oldVer $newVer)
+
+	for file in $allFile
+	do
+			#echo "File:"$file
+
+			# Per Line
+			allLine=$(git diff $oldVer $newVer -- $file | grep '^[+]' | grep -Ev '^(--- a/|\+\+\+ b/)')
+			while read line; do
+
+				isExistConflictString $line
+				if [ $? -eq $RET_YES ]; then
+					#errorFile=$file
+					echo "[Conflict]["$file"]"$line
+					isConflict=$RET_YES
+					break
+				fi
+
+			done <<< "$allLine"
+
+			if [ $isConflict -eq $RET_YES ]; then
+				break
+			fi
+
+	done
+
+	if [ $isConflict -eq $RET_YES ]; then
+			return $RET_ERR
+	else
+			return $RET_OK
+	fi
+}
+
+if [[ "$PROJECT" == "SZRDCommon" ]] ; then
+  checkExistConflict $OLD_REV $NEW_REV
+  if [ $? -eq $RET_OK ]; then
+    echo "[FINAL]OK"
+    exit 0
+  else
+    echo "Detect conflict file(s), fix it before push to repo"
+    exit 1
+  fi
+else
+  exit 0
+fi
